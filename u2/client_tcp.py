@@ -13,6 +13,6 @@ while data != "Bye":
     msg = input("Please enter your message\n")
     my_socket.send(msg.encode())
     data = my_socket.recv(1024).decode()
-    print(f"The server sent data:{data}")
+    print(f"The server sent data: {data}")
 
 my_socket.close()

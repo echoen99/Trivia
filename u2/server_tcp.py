@@ -1,4 +1,7 @@
+import random
 import socket
+import time
+from datetime import datetime
 
 HOST = "0.0.0.0"
 PORT = 8820
@@ -18,9 +21,16 @@ while True:
         client_socket.send("Bye".encode())
         break
     elif data == "Bye":
-        data = " "
+        data_to_sent = " "
+    elif data == "NAME":
+        data_to_sent = "Server 4 u :)"
+    elif data == "TIME":
+        data_to_sent = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    elif data == "RAND":
+        data_to_sent = str(random.randint(1,10))
+    else:
+        data_to_sent = f"{data.upper()}!!!"
 
-    data_to_sent = f"{data.upper()}!!!"
     client_socket.send(data_to_sent.encode())
 
 client_socket.close()
