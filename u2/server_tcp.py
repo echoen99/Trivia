@@ -20,7 +20,8 @@ while True:
     elif data == "Bye":
         data = " "
 
-    client_socket.send(data.encode())
+    data_to_sent = f"{data.upper()}!!!"
+    client_socket.send(data_to_sent.encode())
 
 client_socket.close()
 server_socket.close()   
