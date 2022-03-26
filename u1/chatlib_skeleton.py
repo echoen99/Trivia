@@ -17,13 +17,26 @@ DATA_DELIMITER = "#"  # Delimiter in the data part of the message
 
 PROTOCOL_CLIENT = {
     "login_msg": "LOGIN",
-    "logout_msg": "LOGOUT"
+    "logout_msg": "LOGOUT",
+    "logged_in_msg": "LOGGED",
+    "my_score_msg": "MY_SCORE",
+    "highscore_msg": "HIGHSCORE",
+    "get_question_msg": "GET_QUESTION",
+    "send_answer_msg": "SEND_ANSWER",
 }  # .. Add more commands if needed
 
 
 PROTOCOL_SERVER = {
     "login_ok_msg": "LOGIN_OK",
-    "login_failed_msg": "ERROR"
+    "login_failed_msg": "ERROR",
+    "logged_answer_msg": "LOGGED_ANSWER",
+    "your_score_msg": "YOUR_SCORE",
+    "all_score_msg": "ALL_SCORE",
+    "your_question_msg" : "YOUR_QUESTION",
+    "correct_answer_msg": "CORRECT_ANSWER",
+    "wrong_answer_msg": "WRONG_ANSWER",
+    "no_questions_msg": "NO_QUESTIONS"
+
 }  # ..  Add more commands if needed
 
 
