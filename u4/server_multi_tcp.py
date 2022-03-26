@@ -18,8 +18,9 @@ def main():
     server_socket.listen()
     print("Server is up and running, listening for clients...")
     client_sockets = []
+    messages_to_send = []
     while True:
-        ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, [], [])
+        ready_to_read, ready_to_write, in_error = select.select([server_socket] + client_sockets, client_sockets, [])
         for current_socket in ready_to_read:
             if current_socket is server_socket:
                 (client_socket, client_address) = current_socket.accept()
@@ -28,7 +29,12 @@ def main():
                 print_client_sockets(client_sockets)
             else:
                 print(f"New data from client: {current_socket.getpeername()}")
-                data = current_socket.recv(MAX_MSG_LENGTH).decode()
+                try:
+                    data = current_socket.recv(MAX_MSG_LENGTH).decode()
+                except:
+                    print("Client connection lost")
+                    data = "quit"
+
                 if data.lower()=="quit":
                     print("Connection closed")
                     client_sockets.remove(current_socket)
@@ -37,16 +43,14 @@ def main():
                 else:
                     print(f"Client sent: {data}")
                     data_to_sent = f"{data.upper()}"
-                    current_socket.send(data_to_sent.encode())
+                    messages_to_send.append((current_socket, data_to_sent))
 
-                # if data.lower()=="quit":
-                #     print("Closing client socket now...")
-                #     current_socket.send("Bye".encode())
-                #     break
-                # elif data.lower() == "bye":
-                #     data_to_sent = " "
-                # else:
-
+        for message in messages_to_send:
+            current_socket, data = message
+            if current_socket in ready_to_write:
+                current_socket.send(data.encode())
+                messages_to_send.remove(message)
+    
     server_socket.close()
 
 main()

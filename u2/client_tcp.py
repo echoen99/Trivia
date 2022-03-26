@@ -9,7 +9,7 @@ address = (HOST, PORT)
 my_socket.connect(address)
 
 data = "" 
-while data != "Bye":
+while data.lower() != "bye":
     msg = input("Please enter your message\n")
     my_socket.send(msg.encode())
     data = my_socket.recv(1024).decode()
