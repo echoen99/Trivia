@@ -1,8 +1,7 @@
 import sys
-from typing import Tuple
+from socket import AF_INET,SOCK_STREAM, socket
 
 sys.path.append(".")
-from socket import AF_INET,SOCK_STREAM, socket
 # To use chatlib functions or consts, use chatlib.****
 from u1.chatlib_skeleton import *
 
@@ -12,7 +11,7 @@ SERVER_PORT = 5678
 # HELPER SOCKET METHODS
 
 
-def build_and_send_message(conn:socket, code:str, data:str) -> None:
+def build_and_send_message(conn:socket, code:str, data:str = "") -> None:
 	"""
 	Builds a new message using chatlib, wanted code and message.
 	Prints debug info, then sends it to the given socket.

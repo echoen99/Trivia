@@ -35,7 +35,8 @@ PROTOCOL_SERVER = {
     "your_question_msg" : "YOUR_QUESTION",
     "correct_answer_msg": "CORRECT_ANSWER",
     "wrong_answer_msg": "WRONG_ANSWER",
-    "no_questions_msg": "NO_QUESTIONS"
+    "no_questions_msg": "NO_QUESTIONS",
+    "server_error": "ERROR"
 
 }  # ..  Add more commands if needed
 
