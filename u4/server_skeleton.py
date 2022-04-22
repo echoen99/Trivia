@@ -3,11 +3,11 @@
 ##############################################################################
 
 import select
-from u1.chatlib_skeleton import *
 import sys
-from socket import AF_INET, SOCK_STREAM, socket
+from socket import socket, AF_INET, SOCK_STREAM
 
 sys.path.append(".")
+from u1.chatlib_skeleton import *
 # To use chatlib functions or consts, use chatlib.****
 
 # GLOBALS
@@ -19,12 +19,15 @@ ERROR_MSG = "Error! "
 SERVER_PORT = 5678
 SERVER_IP = "127.0.0.1"
 
-
 # HELPER SOCKET METHODS
 def print_client_sockets(client_sockets):
     for c in client_sockets:
         print("\t", c.getpeername())
 
+def print_connected_users():
+    global logged_users
+    for u in logged_users:
+        print("\t", u)
 
 def build_and_send_message(conn: socket, code: str, data: str = ""):
     # copy from client
@@ -110,7 +113,7 @@ def setup_socket() -> socket:
     """
     # Implement code ...
     address = (SERVER_IP, SERVER_PORT)
-    sock = socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = socket(AF_INET, SOCK_STREAM)
     sock.bind(address)
     sock.listen()
     return sock
@@ -132,6 +135,25 @@ def send_error(conn, error_msg):
 def handle_getscore_message(conn: socket, username: str):
     global users
     # Implement this in later chapters
+    user_details = users.get(username)
+    if not user_details:
+        send_error(conn, f"Invalid username: {username}")
+        return
+
+    score = str(user_details["score"])
+    build_and_send_message(conn, PROTOCOL_SERVER["your_score_msg"], score)
+
+
+def handle_highscore_message(conn: socket):
+    global users
+    # Implement this in later chapters
+    scores = []
+    for user_details in sorted(users, key=lambda x: x["score"], reverse=True):
+        username = user_details["username"]
+        user_score = user_details["score"]
+        scores.append(f"{username}: {user_score}")
+
+    build_and_send_message(conn, PROTOCOL_SERVER["your_score_msg"], '/n'.join(scores))
 
 
 def handle_logout_message(conn: socket):
@@ -143,6 +165,7 @@ def handle_logout_message(conn: socket):
     global logged_users
 
     # Implement code ...
+    logged_users.pop(conn.getpeername())
     conn.close()
 
 
@@ -160,19 +183,22 @@ def handle_login_message(conn: socket, data: str):
     credentials = data.split("#")
     user = credentials[0]
     password = credentials[1]
-    user_details = users[user]
+    user_details = users.get(user)
     if not user_details:
         send_error(conn, f"Invalid username or password: {user}")
+        return
 
     if user_details["password"] != password:
         send_error(conn, f"Invalid username or password: {password}")
+        return
 
     build_and_send_message(conn, PROTOCOL_SERVER["login_ok_msg"])
     address = conn.getpeername()
-    logged_users.append((user, address))
+    # logged_user = (user, address)
+    logged_users[address] = user
 
 
-def handle_client_message(conn, cmd, data):
+def handle_client_message(client_sockets, conn, cmd, data):
     """
     Gets message code and data and calls the right function to handle command
     Recieves: socket, message code and data
@@ -183,10 +209,23 @@ def handle_client_message(conn, cmd, data):
     # Implement code ...
     if cmd == PROTOCOL_CLIENT["login_msg"]:
         handle_login_message(conn, data)
+        #print_connected_users()
+    
     elif cmd == PROTOCOL_CLIENT["logout_msg"]:
-        handle_logout_message(conn, data)
+        client_sockets.remove(conn)
+        handle_logout_message(conn)
+        #print_connected_users()
+    
+    elif cmd == PROTOCOL_CLIENT["my_score_msg"]:
+        user = logged_users[conn.getpeername()]
+        handle_getscore_message(conn, user)
+    
+    elif cmd == PROTOCOL_CLIENT["highscore_msg"]:
+        handle_highscore_message(conn)
+    
     else:
         send_error(conn, f"Invalid command: {cmd}")
+        raise ValueError(f"Invalud command: {cmd}")
 
 
 def main():
@@ -197,9 +236,15 @@ def main():
     print("Welcome to Trivia Server!")
 
     # Implement code ...
+    print("Initilaizing databases...")
+    users = load_user_database()
+    questions = load_questions()
+
     print("Setting up server...")
     server_socket = setup_socket()
     print("Server is up and running, listening for clients...")
+
+
     client_sockets = []
     messages_to_send = []
 
@@ -215,11 +260,11 @@ def main():
                 print(f"New data from client: {current_socket.getpeername()}")
                 try:
                     cmd, data = recv_message_and_parse(current_socket)
-                    handle_client_message(current_socket, cmd, data)
+                    handle_client_message(client_sockets, current_socket, cmd, data)
                 except:
                     print("Client connection lost")
+                    client_sockets.remove(current_socket)
                     handle_logout_message(current_socket)
-
 
 
 if __name__ == '__main__':
