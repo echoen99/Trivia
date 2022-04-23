@@ -98,6 +98,7 @@ def load_user_database():
     users = {
         "test":	{"password": "test", "score": 0, "questions_asked": []},
         "yossi":	{"password": "123", "score": 50, "questions_asked": []},
+        "yosia":	{"password": "123", "score": 150, "questions_asked": []},
         "master":	{"password": "master", "score": 200, "questions_asked": []}
     }
     return users
@@ -131,7 +132,6 @@ def send_error(conn, error_msg):
 
 # MESSAGE HANDLING
 
-
 def handle_getscore_message(conn: socket, username: str):
     global users
     # Implement this in later chapters
@@ -148,13 +148,27 @@ def handle_highscore_message(conn: socket):
     global users
     # Implement this in later chapters
     scores = []
-    for user_details in sorted(users, key=lambda x: x["score"], reverse=True):
-        username = user_details["username"]
-        user_score = user_details["score"]
+    for user_details in sorted(users.items(), key=lambda k_v: k_v[1]["score"], reverse=True):
+        username = user_details[0]
+        user_score = user_details[1]["score"]
         scores.append(f"{username}: {user_score}")
 
-    build_and_send_message(conn, PROTOCOL_SERVER["your_score_msg"], '/n'.join(scores))
+    build_and_send_message(conn, PROTOCOL_SERVER["all_score_msg"], '\n'.join(scores))
 
+
+def handle_logged_message(conn: socket) -> None:
+    """Get client socket and send to it a list of logged in users
+    :param socket conn: client socket
+    Returns: None
+    """
+    global logged_users
+
+    # Implement code ...
+    users_list = []
+    for user in logged_users:
+        users_list.append(user[1])
+
+    build_and_send_message(conn, PROTOCOL_SERVER["logged_answer_msg"], '\n'.join(users_list))
 
 def handle_logout_message(conn: socket):
     """
@@ -198,7 +212,7 @@ def handle_login_message(conn: socket, data: str):
     logged_users[address] = user
 
 
-def handle_client_message(client_sockets, conn, cmd, data):
+def handle_client_message(client_sockets, conn: socket, cmd: str, data: str):
     """
     Gets message code and data and calls the right function to handle command
     Recieves: socket, message code and data
@@ -207,7 +221,9 @@ def handle_client_message(client_sockets, conn, cmd, data):
     global logged_users	 # To be used later
 
     # Implement code ...
-    if cmd == PROTOCOL_CLIENT["login_msg"]:
+    user = logged_users.get(conn.getpeername())
+
+    if not user and cmd == PROTOCOL_CLIENT["login_msg"]:
         handle_login_message(conn, data)
         #print_connected_users()
     
@@ -223,9 +239,15 @@ def handle_client_message(client_sockets, conn, cmd, data):
     elif cmd == PROTOCOL_CLIENT["highscore_msg"]:
         handle_highscore_message(conn)
     
+    elif cmd == PROTOCOL_CLIENT["logged_in_msg"]:
+        handle_logged_message(conn)
+    
     else:
-        send_error(conn, f"Invalid command: {cmd}")
-        raise ValueError(f"Invalud command: {cmd}")
+        error_msg = f"Invalid command: {cmd}"
+        if not user:
+            error_msg += ", You must be logged in"
+        send_error(conn, error_msg)
+        raise ValueError(error_msg)
 
 
 def main():
@@ -236,14 +258,13 @@ def main():
     print("Welcome to Trivia Server!")
 
     # Implement code ...
-    print("Initilaizing databases...")
+    print("Initilaizing databases")
     users = load_user_database()
     questions = load_questions()
 
-    print("Setting up server...")
+    print(f"Setting up server on port {SERVER_PORT}")
     server_socket = setup_socket()
-    print("Server is up and running, listening for clients...")
-
+    print("Server is up and running, waiting for a connection...")
 
     client_sockets = []
     messages_to_send = []
